@@ -23,11 +23,15 @@ export async function syncNow() {
     syncing = true;
 
     try{
-        const ops = (await getOutbox() as any[]).sort((a, b) => a.ts - b.ts); // Ordena las operaciones por su marca de tiempo para procesarlas en orden
+        const ops = (await getOutbox()).sort((a, b) => a.ts - b.ts); // Ordena las operaciones por su marca de tiempo para procesarlas en orden
         if(ops.length === 0) return; // No hay operaciones pendientes, no es necesario sincronizar
 
-
-        const toSync: any[] = [];
+        const toSync: Array<{
+            clienteId: string;
+            title: string;
+            description: string;
+            status: string;
+        }> = [];
         for(const op of ops) {
             if(op.op === "create") {
                 toSync.push({
@@ -42,9 +46,9 @@ export async function syncNow() {
                 if(cid){
                     toSync.push({
                         clienteId: cid,
-                        title: op.data.title,
-                        description: op.data.description,
-                        status: op.data.status,
+                        title: op.data.title ?? "",
+                        description: op.data.description ?? "",
+                        status: op.data.status ?? "Pendiente",
                 });
             } else if (op.serverId) {
                 try {
@@ -60,7 +64,7 @@ export async function syncNow() {
     if(toSync.length) {
         try{
             const {data} = await api.post("/tasks/bulksync", {tasks: toSync});
-            for (const map of data?._mapping || []) {
+            for (const map of data?.mapping || []) {
                 await setMapping(map.clienteId, map.serverId);
                 await promoteLocalToServer(map.clienteId, map.serverId);
             }

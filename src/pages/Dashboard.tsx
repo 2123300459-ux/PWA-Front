@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/immutability */
 import { useEffect, useMemo, useState } from "react";
 import { api, setAuth } from "../api";
 import {
@@ -97,10 +98,12 @@ export default function Dashboard() {
 
   async function fetchProfile() {
     try {
+      const saved = localStorage.getItem("user");
+      const user = saved ? JSON.parse(saved) : null;
       setProfile({
-        name: "Juan Pérez",
-        email: "juan.perez@example.com",
-        role: "Administrador del Sistema",
+        name: user?.name || "Usuario",
+        email: user?.email || "Sin correo registrado",
+        role: "Usuario",
       });
     } catch (err) {
       console.error("Error cargando perfil", err);
@@ -276,6 +279,7 @@ export default function Dashboard() {
 
   function logout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setAuth(null);
     window.location.href = "/";
   }

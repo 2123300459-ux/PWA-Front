@@ -29,9 +29,9 @@ export default defineConfig({
         ],
         screenshots: [
           {
-            src: "/screenshots/vista.png",
+            src: "/screenshots/vista.jpeg",
             sizes: "1902x990",
-            type: "image/png",
+            type: "image/jpeg",
             form_factor: "wide"
           }
         ]
