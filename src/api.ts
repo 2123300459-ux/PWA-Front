@@ -1,4 +1,5 @@
 import axios from "axios";
+
 export const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "/api",
 });
@@ -13,10 +14,15 @@ setAuth(localStorage.getItem("token"));
 api.interceptors.response.use(
     (r)=>r,
     (err)=>{
-        if(err.response?.status === 401){
+        const requestUrl = String(err.config?.url || "");
+        const isAuthRequest = requestUrl.includes("/auth/login") || requestUrl.includes("/auth/register");
+        const isPublicPage = window.location.pathname === "/" || window.location.pathname === "/register";
+
+        if(err.response?.status === 401 && !isAuthRequest && !isPublicPage){
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
             setAuth(null);
-            window.location.href = '/login';
+            window.location.href = '/';
         }
         return Promise.reject(err);
     }

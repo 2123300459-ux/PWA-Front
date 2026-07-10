@@ -12,6 +12,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  function getLoginError(err: unknown) {
+    if (!axios.isAxiosError<{ message?: string }>(err)) {
+      return "Error al iniciar sesion";
+    }
+
+    if (!err.response) {
+      return "No se pudo conectar con el backend. Revisa VITE_API_URL en Vercel.";
+    }
+
+    return err.response.data?.message || "Error al iniciar sesion";
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -24,10 +36,7 @@ export default function Login() {
       setAuth(data.token);
       nav("/dashboard");
     } catch (err: unknown) {
-      const message = axios.isAxiosError<{ message?: string }>(err)
-        ? err.response?.data?.message
-        : undefined;
-      setError(message || "Error al iniciar sesion");
+      setError(getLoginError(err));
     } finally {
       setLoading(false);
     }
