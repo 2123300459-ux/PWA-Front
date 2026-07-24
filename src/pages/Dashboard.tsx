@@ -28,6 +28,10 @@ type UserProfile = {
   name: string;
   email: string;
   role: string;
+  picture?: string;
+  bio?: string;
+  phone?: string;
+  location?: string;
 };
 
 const isLocalId = (id: string) => !/^[a-f0-9]{24}$/i.test(id);
@@ -54,6 +58,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
+  const [titleError, setTitleError] = useState("");
   const [description, setDescription] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
@@ -67,6 +72,10 @@ export default function Dashboard() {
     name: "Cargando...",
     email: "...",
     role: "Usuario",
+    picture: "",
+    bio: "",
+    phone: "",
+    location: "",
   });
 
   useEffect(() => {
@@ -100,14 +109,47 @@ export default function Dashboard() {
     try {
       const saved = localStorage.getItem("user");
       const user = saved ? JSON.parse(saved) : null;
+      const savedExtra = localStorage.getItem("profileExtra");
+      const extra = savedExtra ? JSON.parse(savedExtra) : {};
       setProfile({
         name: user?.name || "Usuario",
         email: user?.email || "Sin correo registrado",
-        role: "Usuario",
+        role: extra.role || "Usuario",
+        picture: extra.picture || user?.picture || "",
+        bio: extra.bio || "",
+        phone: extra.phone || "",
+        location: extra.location || "",
       });
     } catch (err) {
       console.error("Error cargando perfil", err);
     }
+  }
+
+  function saveProfileExtra(nextProfile: UserProfile) {
+    const extra = {
+      role: nextProfile.role || "Usuario",
+      picture: nextProfile.picture || "",
+      bio: nextProfile.bio || "",
+      phone: nextProfile.phone || "",
+      location: nextProfile.location || "",
+    };
+    localStorage.setItem("profileExtra", JSON.stringify(extra));
+    setProfile(nextProfile);
+  }
+
+  function updateProfileField(field: keyof UserProfile, value: string) {
+    saveProfileExtra({ ...profile, [field]: value });
+  }
+
+  function handleProfilePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateProfileField("picture", String(reader.result || ""));
+    };
+    reader.readAsDataURL(file);
   }
 
   async function loadFromServer() {
@@ -128,7 +170,10 @@ export default function Dashboard() {
     e.preventDefault();
     const t = title.trim();
     const d = description.trim();
-    if (!t) return;
+    if (!t) {
+      setTitleError("No se puede agregar la tarea, Ingresa el Titulo de la tarea");
+      return;
+    }
 
     const clienteId = crypto.randomUUID();
     const localTask = normalizeTask({
@@ -142,6 +187,7 @@ export default function Dashboard() {
     setTasks((prev) => [localTask, ...prev]);
     await putTaskLocal(localTask);
     setTitle("");
+    setTitleError("");
     setDescription("");
 
     if (!navigator.onLine) {
@@ -355,7 +401,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => setShowProfile(true)}
-                className="rounded-full bg-white px-4 py-2 text-sm font-bold text-violet-600 shadow-lg shadow-violet-900/10 transition hover:bg-violet-50"
+                className="rounded-full bg-white px-4 py-2 text-sm font-bold text-black shadow-lg shadow-violet-900/10 transition hover:bg-violet-50"
               >
                 Perfil
               </button>
@@ -385,10 +431,24 @@ export default function Dashboard() {
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    if (titleError) setTitleError("");
+                  }}
                   placeholder="Que necesitas hacer?"
-                  className="w-full rounded-2xl border border-pink-100 bg-pink-50/70 px-4 py-3 text-sm font-semibold text-black outline-none transition placeholder:text-slate-400 focus:border-pink-300 focus:bg-white focus:ring-4 focus:ring-pink-100"
+                  aria-invalid={!!titleError}
+                  aria-describedby={titleError ? "task-title-error" : undefined}
+                  className={`w-full rounded-2xl border bg-pink-50/70 px-4 py-3 text-sm font-semibold text-black outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-4 ${
+                    titleError
+                      ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100"
+                      : "border-pink-100 focus:border-pink-300 focus:ring-pink-100"
+                  }`}
                 />
+                {titleError && (
+                  <p id="task-title-error" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+                    {titleError}
+                  </p>
+                )}
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -484,14 +544,14 @@ export default function Dashboard() {
                               <input
                                 value={editingTitle}
                                 onChange={(e) => setEditingTitle(e.target.value)}
-                                className="w-full rounded-2xl border border-pink-200 bg-pink-50 px-4 py-2 text-sm font-bold text-slate-900 outline-none focus:bg-white focus:ring-4 focus:ring-pink-100"
+                                className="w-full rounded-2xl border border-pink-200 bg-pink-50 px-4 py-2 text-sm font-bold text-pink-700 outline-none focus:bg-white focus:ring-4 focus:ring-pink-100"
                                 placeholder="Titulo"
                                 autoFocus
                               />
                               <textarea
                                 value={editingDescription}
                                 onChange={(e) => setEditingDescription(e.target.value)}
-                                className="w-full resize-none rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm text-slate-700 outline-none focus:bg-white focus:ring-4 focus:ring-violet-100"
+                                className="w-full resize-none rounded-2xl border border-violet-200 bg-violet-50 px-4 py-2 text-sm text-pink-700 outline-none focus:bg-white focus:ring-4 focus:ring-violet-100"
                                 placeholder="Descripcion"
                                 rows={2}
                               />
@@ -509,7 +569,7 @@ export default function Dashboard() {
                                 </h3>
                                 {(t.pending || isLocalId(t._id)) && (
                                   <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-700">
-                                    Pendiente de sync
+                                    Sincronizando
                                   </span>
                                 )}
                               </div>
@@ -537,7 +597,7 @@ export default function Dashboard() {
                             <button
                               type="button"
                               onClick={() => saveEdit(t._id)}
-                              className="rounded-2xl bg-emerald-500 px-4 py-2 text-xs font-black text-white shadow-lg shadow-emerald-100 transition hover:bg-emerald-600"
+                              className="rounded-2xl bg-emerald-500 px-4 py-2 text-xs font-black text-pink-700 shadow-lg shadow-emerald-100 transition hover:bg-emerald-600"
                             >
                               Guardar
                             </button>
@@ -571,30 +631,78 @@ export default function Dashboard() {
 
       {showProfile && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm"
           onClick={() => setShowProfile(false)}
         >
           <div
-            className="w-full max-w-sm overflow-hidden rounded-[1.7rem] bg-white shadow-2xl shadow-violet-300/50"
+            className="w-full max-w-sm overflow-hidden bg-white shadow-2xl shadow-violet-300/50"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-gradient-to-r from-pink-600 via-fuchsia-500 to-violet-500 p-6 text-white">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/75">Perfil</p>
-              <h2 className="mt-2 text-2xl font-black">{profile.name}</h2>
-              <p className="mt-1 text-sm font-medium text-white/80">{profile.email}</p>
+            <div className="bg-gradient-to-r from-pink-700 via-pink-600 to-pink-500 p-8 text-white">
+              <p className="text-xs font-bold uppercase tracking-[0.2em]">Perfil</p>
+              <h2 className="mt-5 text-3xl font-black">{profile.name}</h2>
+              <p className="mt-2 text-sm font-bold">{profile.email}</p>
             </div>
 
-            <div className="space-y-3 p-6">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Rol</p>
-                <p className="mt-1 font-black text-slate-900">{profile.role}</p>
+            <div className="space-y-5 bg-black p-8">
+              <div className="flex items-center gap-4">
+                <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 border-pink-100 bg-pink-100">
+                  {profile.picture ? (
+                    <img src={profile.picture} alt="Foto de perfil" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center bg-gradient-to-br from-pink-600 to-pink-300 text-4xl font-black text-white">
+                      {profile.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <label className="inline-flex cursor-pointer rounded-2xl bg-gradient-to-r from-pink-600 via-pink-300 to-pink-50 px-4 py-3 text-sm font-black text-white">
+                    Agregar foto
+                    <input type="file" accept="image/*" className="hidden" onChange={handleProfilePhoto} />
+                  </label>
+                  <p className="mt-2 text-xs font-bold text-slate-300">
+                    Personaliza tu perfil con una imagen.
+                  </p>
+                </div>
               </div>
+
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-300">Rol</span>
+                <input
+                  value={profile.role}
+                  onChange={(e) => updateProfileField("role", e.target.value)}
+                  className="mt-2 w-full rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-sm font-black text-black outline-none focus:border-pink-300 focus:bg-white focus:ring-4 focus:ring-pink-100"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-300">Telefono</span>
+                <input
+                  value={profile.phone || ""}
+                  onChange={(e) => updateProfileField("phone", e.target.value)}
+                  placeholder="Agrega tu telefono"
+                  className="mt-2 w-full rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-sm font-black text-black outline-none placeholder:text-slate-400 focus:border-pink-300 focus:bg-white focus:ring-4 focus:ring-pink-100"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs font-black uppercase tracking-widest text-slate-300">Sobre mi</span>
+                <textarea
+                  value={profile.bio || ""}
+                  onChange={(e) => updateProfileField("bio", e.target.value)}
+                  placeholder="Agrega informacion extra sobre ti"
+                  rows={4}
+                  className="mt-2 w-full resize-none rounded-2xl border border-pink-100 bg-pink-50 px-4 py-3 text-sm font-black text-black outline-none placeholder:text-slate-400 focus:border-pink-300 focus:bg-white focus:ring-4 focus:ring-pink-100"
+                />
+              </label>
+
               <button
                 type="button"
                 onClick={() => setShowProfile(false)}
-                className="w-full rounded-2xl bg-gradient-to-r from-pink-600 to-violet-500 px-4 py-3 text-sm font-black text-white"
+                className="w-full rounded-2xl bg-gradient-to-r from-pink-600 via-pink-300 to-pink-50 px-4 py-3 text-sm font-black text-white"
               >
-                Cerrar
+                Guardar perfil
               </button>
             </div>
           </div>
