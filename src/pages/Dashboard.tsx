@@ -68,6 +68,7 @@ export default function Dashboard() {
   const [online, setOnline] = useState<boolean>(navigator.onLine);
 
   const [showProfile, setShowProfile] = useState(false);
+  const [profileSaveMessage, setProfileSaveMessage] = useState("");
   const [profile, setProfile] = useState<UserProfile>({
     name: "Cargando...",
     email: "...",
@@ -135,6 +136,11 @@ export default function Dashboard() {
     };
     localStorage.setItem("profileExtra", JSON.stringify(extra));
     setProfile(nextProfile);
+  }
+
+  function showProfileSavedMessage() {
+    setProfileSaveMessage("Se guardo los cambios");
+    window.setTimeout(() => setProfileSaveMessage(""), 2500);
   }
 
   function updateProfileField(field: keyof UserProfile, value: string) {
@@ -697,9 +703,15 @@ export default function Dashboard() {
                 />
               </label>
 
+              {profileSaveMessage && (
+                <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-black text-emerald-700">
+                  {profileSaveMessage}
+                </p>
+              )}
+
               <button
                 type="button"
-                onClick={() => setShowProfile(false)}
+                onClick={showProfileSavedMessage}
                 className="w-full rounded-2xl bg-gradient-to-r from-pink-600 via-pink-300 to-pink-50 px-4 py-3 text-sm font-black text-white"
               >
                 Guardar perfil
