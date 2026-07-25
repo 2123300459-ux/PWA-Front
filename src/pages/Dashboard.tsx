@@ -378,7 +378,7 @@ export default function Dashboard() {
         <header className="mb-6 overflow-hidden rounded-[2rem] bg-gradient-to-r from-pink-600 via-fuchsia-500 to-violet-500 text-white shadow-2xl shadow-pink-300/50">
           <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/75">TaskFlow PWA</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-white/75">To-Do PWA</p>
               <h1 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl">Hola, {profile.name}</h1>
               <p className="mt-2 max-w-2xl text-sm font-medium text-white/85 sm:text-base">
                 Organiza tus tareas con una vista clara, rapida y lista para trabajar online u offline.
